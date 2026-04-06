@@ -2,13 +2,16 @@ const { successResponse } = require('../../utils/response');
 const invoicesService = require('./invoices.service');
 
 async function uploadInvoice(req, res) {
-  const data = await invoicesService.registerUploadFromFile(req.file);
+  const uploadedBy = req.user?.id ?? null;
+  const data = await invoicesService.registerUploadFromFile(req.file, { uploadedBy });
   return successResponse(res, data, 'Invoice uploaded successfully', 201);
 }
 
 async function listInvoices(req, res) {
-  const data = await invoicesService.listInvoices();
-  return successResponse(res, data, 'Invoices retrieved');
+  const data = await invoicesService.listInvoices(req.query);
+  const message =
+    data.length === 0 ? 'No invoices found' : 'Invoices fetched successfully';
+  return successResponse(res, data, message);
 }
 
 async function getInvoice(req, res) {
