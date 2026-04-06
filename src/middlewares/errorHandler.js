@@ -1,4 +1,5 @@
 const multer = require('multer');
+const config = require('../config');
 const { failResponse } = require('../utils/response');
 
 function errorHandler(err, req, res, _next) {
@@ -19,7 +20,7 @@ function errorHandler(err, req, res, _next) {
 
   const statusCode = err.statusCode && Number.isFinite(err.statusCode) ? err.statusCode : 500;
   const message =
-    statusCode === 500 && process.env.NODE_ENV === 'production'
+    statusCode === 500 && config.isProduction
       ? 'Internal server error'
       : err.message || 'Internal server error';
 

@@ -1,10 +1,10 @@
 const path = require('path');
 const AppError = require('../../common/AppError');
+const config = require('../../config');
 const { generateId } = require('../../utils/generateId');
 const extractionService = require('../extraction/extraction.service');
 const reviewService = require('../review/review.service');
 const auditService = require('../audit/audit.service');
-const uploadService = require('../upload/upload.service');
 
 /** @type {Map<string, object>} */
 const invoicesById = new Map();
@@ -16,7 +16,7 @@ function toPublicInvoice(record) {
 
 async function registerUploadFromFile(file) {
   const id = generateId('inv');
-  const relativePath = path.posix.join(uploadService.UPLOADS_RELATIVE, file.filename);
+  const relativePath = path.posix.join(config.uploadPath, file.filename);
 
   const record = {
     id,

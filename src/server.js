@@ -1,8 +1,8 @@
 require('dotenv').config();
 
+const config = require('./config');
 const app = require('./app');
-const { port } = require('./config/env');
 
-app.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
+app.listen(config.port, () => {
+  console.log(`Server listening on http://localhost:${config.port}`);
 });

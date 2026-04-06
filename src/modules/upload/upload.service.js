@@ -1,9 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-
-const UPLOADS_RELATIVE = 'uploads';
-
-const UPLOADS_ABSOLUTE = path.join(__dirname, '..', '..', '..', UPLOADS_RELATIVE);
+const config = require('../../config');
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
@@ -12,17 +9,17 @@ const ALLOWED_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png']);
 const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 
 function ensureUploadsDir() {
-  if (!fs.existsSync(UPLOADS_ABSOLUTE)) {
-    fs.mkdirSync(UPLOADS_ABSOLUTE, { recursive: true });
+  if (!fs.existsSync(config.uploadAbsolutePath)) {
+    fs.mkdirSync(config.uploadAbsolutePath, { recursive: true });
   }
 }
 
 function getUploadsAbsolutePath() {
-  return UPLOADS_ABSOLUTE;
+  return config.uploadAbsolutePath;
 }
 
 function getUploadsRelativeUrlPath() {
-  return UPLOADS_RELATIVE;
+  return config.uploadPath;
 }
 
 function sanitizeBaseName(name) {
@@ -57,12 +54,15 @@ async function describeUploadCapabilities() {
     allowedExtensions: Array.from(ALLOWED_EXTENSIONS),
     allowedMimeTypes: Array.from(ALLOWED_MIME_TYPES),
     storage: 'local',
-    relativeFolder: UPLOADS_RELATIVE,
+    relativeFolder: config.uploadPath,
+    uploadAbsolutePath: config.uploadAbsolutePath,
   };
 }
 
 module.exports = {
-  UPLOADS_RELATIVE,
+  get UPLOADS_RELATIVE() {
+    return config.uploadPath;
+  },
   MAX_FILE_BYTES,
   ensureUploadsDir,
   getUploadsAbsolutePath,
