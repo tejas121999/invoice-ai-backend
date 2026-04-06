@@ -1,6 +1,10 @@
 const express = require('express');
 const asyncHandler = require('../../middlewares/asyncHandler');
 const {
+  uploadInvoiceSingle,
+  requireInvoiceFile,
+} = require('../upload/upload.middleware');
+const {
   uploadInvoice,
   listInvoices,
   getInvoice,
@@ -12,7 +16,12 @@ const {
 
 const router = express.Router();
 
-router.post('/upload', asyncHandler(uploadInvoice));
+router.post(
+  '/upload',
+  uploadInvoiceSingle,
+  requireInvoiceFile,
+  asyncHandler(uploadInvoice),
+);
 router.get('/', asyncHandler(listInvoices));
 router.get('/:id/audit', asyncHandler(getAudit));
 router.get('/:id/result', asyncHandler(getResult));

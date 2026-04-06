@@ -2,8 +2,8 @@ const { successResponse } = require('../../utils/response');
 const invoicesService = require('./invoices.service');
 
 async function uploadInvoice(req, res) {
-  const data = await invoicesService.registerUpload(req.body || {});
-  return successResponse(res, data, 'Upload registered (MVP placeholder — add multer for real files)', 201);
+  const data = await invoicesService.registerUploadFromFile(req.file);
+  return successResponse(res, data, 'Invoice uploaded successfully', 201);
 }
 
 async function listInvoices(req, res) {

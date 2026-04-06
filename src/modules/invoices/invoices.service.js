@@ -1,8 +1,10 @@
+const path = require('path');
 const AppError = require('../../common/AppError');
 const { generateId } = require('../../utils/generateId');
 const extractionService = require('../extraction/extraction.service');
 const reviewService = require('../review/review.service');
 const auditService = require('../audit/audit.service');
+const uploadService = require('../upload/upload.service');
 
 /** @type {Map<string, object>} */
 const invoicesById = new Map();
@@ -12,18 +14,17 @@ function toPublicInvoice(record) {
   return rest;
 }
 
-async function registerUpload(payload) {
+async function registerUploadFromFile(file) {
   const id = generateId('inv');
-  const fileName =
-    payload && typeof payload.fileName === 'string'
-      ? payload.fileName
-      : payload && typeof payload.name === 'string'
-        ? payload.name
-        : null;
+  const relativePath = path.posix.join(uploadService.UPLOADS_RELATIVE, file.filename);
 
   const record = {
     id,
-    fileName,
+    fileName: file.filename,
+    originalName: file.originalname,
+    filePath: relativePath,
+    mimeType: file.mimetype,
+    size: file.size,
     status: 'uploaded',
     createdAt: new Date().toISOString(),
     extractionJob: null,
@@ -32,9 +33,21 @@ async function registerUpload(payload) {
   };
 
   invoicesById.set(id, record);
-  await auditService.appendEntry(id, 'invoice.uploaded', { fileName });
+  await auditService.appendEntry(id, 'invoice.uploaded', {
+    fileName: file.filename,
+    originalName: file.originalname,
+    filePath: relativePath,
+    mimeType: file.mimetype,
+    size: file.size,
+  });
 
-  return toPublicInvoice(record);
+  return {
+    fileName: file.filename,
+    originalName: file.originalname,
+    filePath: relativePath,
+    mimeType: file.mimetype,
+    size: file.size,
+  };
 }
 
 async function listInvoices() {
@@ -113,7 +126,7 @@ async function getInvoiceAudit(id) {
 }
 
 module.exports = {
-  registerUpload,
+  registerUploadFromFile,
   listInvoices,
   getInvoiceById,
   processInvoice,
