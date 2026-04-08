@@ -21,7 +21,7 @@ async function getInvoice(req, res) {
 
 async function processInvoice(req, res) {
   const data = await invoicesService.processInvoice(req.params.id);
-  return successResponse(res, data, 'Processing started (placeholder pipeline)');
+  return successResponse(res, data, 'Invoice processing triggered successfully');
 }
 
 async function getResult(req, res) {

@@ -1,6 +1,7 @@
 const AppError = require('../../common/AppError');
 const { Invoice } = require('../../models');
 const extractionService = require('../extraction/extraction.service');
+const pythonClientService = require('../../services/python-client.service');
 const reviewService = require('../review/review.service');
 const auditService = require('../audit/audit.service');
 const invoiceMetadataService = require('./invoice-metadata.service');
@@ -174,34 +175,46 @@ async function getInvoiceById(id) {
 }
 
 async function processInvoice(id) {
-  const record = await loadInvoiceRecord(id);
-  if (!record) {
+  const numericId = parseNumericInvoiceId(id);
+  if (numericId == null) {
     throw new AppError('Invoice not found', 404);
   }
 
-  record.status = 'processing';
-  record.processingStatus = 'processing';
-
-  if (typeof record.id === 'number') {
-    await Invoice.update({ processingStatus: 'processing' }, { where: { id: record.id } });
-    const ph = getPlaceholder(record.id);
-    const job = await extractionService.queueExtractionJob(record.id);
-    ph.extractionJob = job;
-    record.extractionJob = job;
-    await auditService.appendEntry(record.id, 'invoice.process_started', { jobId: job.jobId });
-    return {
-      invoice: toPublicInvoice(record),
-      job,
-    };
+  const row = await Invoice.findByPk(numericId);
+  if (!row) {
+    throw new AppError('Invoice not found', 404);
   }
 
-  const job = await extractionService.queueExtractionJob(record.id);
-  record.extractionJob = job;
-  await auditService.appendEntry(record.id, 'invoice.process_started', { jobId: job.jobId });
-  return {
-    invoice: toPublicInvoice(record),
-    job,
+  const record = rowToBaseRecord(row);
+  const payload = {
+    invoiceId: record.id,
+    filePath: record.filePath,
   };
+
+  try {
+    const extraction = await pythonClientService.extractInvoice(payload);
+
+    await auditService.appendEntry(record.id, 'invoice.process_started', {
+      provider: 'python-fastapi',
+      request: payload,
+    });
+
+    return {
+      invoiceId: record.id,
+      extraction,
+    };
+  } catch (error) {
+    await auditService.appendEntry(record.id, 'invoice.process_failed', {
+      provider: 'python-fastapi',
+      reason: error.message,
+    });
+
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    throw new AppError('Failed to process invoice', 500);
+  }
 }
 
 async function getProcessResult(id) {
