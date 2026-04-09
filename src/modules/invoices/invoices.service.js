@@ -191,18 +191,9 @@ async function processInvoice(id) {
     filePath: record.filePath,
   };
 
+  let extraction;
   try {
-    const extraction = await pythonClientService.extractInvoice(payload);
-
-    await auditService.appendEntry(record.id, 'invoice.process_started', {
-      provider: 'python-fastapi',
-      request: payload,
-    });
-
-    return {
-      invoiceId: record.id,
-      extraction,
-    };
+    extraction = await pythonClientService.extractInvoice(payload);
   } catch (error) {
     await auditService.appendEntry(record.id, 'invoice.process_failed', {
       provider: 'python-fastapi',
@@ -215,6 +206,31 @@ async function processInvoice(id) {
 
     throw new AppError('Failed to process invoice', 500);
   }
+
+  try {
+    await extractionService.saveExtractionResult(record.id, extraction);
+  } catch (error) {
+    await auditService.appendEntry(record.id, 'invoice.process_failed', {
+      provider: 'mysql',
+      phase: 'persist',
+      reason: error.message,
+    });
+
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    throw new AppError('Failed to process invoice', 500);
+  }
+
+  await auditService.appendEntry(record.id, 'invoice.process_completed', {
+    provider: 'python-fastapi',
+  });
+
+  return {
+    invoiceId: record.id,
+    processingStatus: 'processed',
+  };
 }
 
 async function getProcessResult(id) {

@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const config = require('./config');
 const { ensureDatabaseExists, testConnection } = require('./config/database');
+const { ensureExtractedInvoiceHybridColumns } = require('./config/ensureExtractedInvoiceSchema');
 const { syncDatabase } = require('./models');
 const app = require('./app');
 
@@ -20,6 +21,7 @@ const app = require('./app');
 
   try {
     await syncDatabase();
+    await ensureExtractedInvoiceHybridColumns();
   } catch (err) {
     console.error('[database] Sync failed:', err.message);
     process.exit(1);
